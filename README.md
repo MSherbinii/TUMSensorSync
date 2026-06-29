@@ -199,17 +199,72 @@ Copy `orchestrator/config.json.template` to `orchestrator/config.json` and edit 
 
 ## Usage
 
-### Sending markers from Unity
+### When Do Markers Fire?
+
+Markers fire **only when you tell them to**. Nothing is automatic except the optional SyncFlash calibration pulse on scene load (which you can disable in the Inspector).
+
+You have three ways to fire markers:
+
+#### Option 1: From code (most control)
+
+Call `SendMarker()` at the exact line where you want the timestamp recorded:
 
 ```csharp
-// From any script — no imports needed
+// No imports needed — LSLManager is in the global namespace
 LSLManager.Instance.SendMarker("ScenarioStart:1");
+LSLManager.Instance.SendMarker("NPCSpeaking:angry_manager");
 LSLManager.Instance.SendMarker("UserAction:button_pressed");
-LSLManager.Instance.FireSyncFlash();
+LSLManager.Instance.SendMarker("StimulusShown:stress_image_3");
 
-// Via the bridge (Inspector-configurable)
-FindObjectOfType<LSLEventBridge>().FireMarker("MyEvent");
+// SyncFlash calibration (fires a white screen flash for latency measurement)
+LSLManager.Instance.FireSyncFlash();
 ```
+
+#### Option 2: From the Inspector (no code needed)
+
+On the `LSLEventBridge` component:
+
+1. Expand the **Bindings** list
+2. Click **+** to add a new entry
+3. Set the **Marker Name** (e.g. `"DoorOpened"`)
+4. Wire the **On Fire** event to any trigger — a Button click, Timeline signal, animation event, collision, etc.
+
+The marker fires at the exact frame the event triggers.
+
+#### Option 3: Via the bridge from another script
+
+```csharp
+// No need to import LSL — the bridge handles it
+FindObjectOfType<LSLEventBridge>().FireMarker("UserSatDown");
+```
+
+#### Common marker patterns
+
+| When to mark | Example code |
+|-------------|-------------|
+| Scene loads | Check "Sync Flash On Load" on the bridge (Inspector) |
+| Scenario/level starts | `SendMarker("ScenarioStart:1")` |
+| User performs an action | `SendMarker("UserAction:grabbed_object")` |
+| NPC begins speaking | `SendMarker("NPCSpeaking:role_manager")` |
+| Stimulus presented | `SendMarker("Stimulus:high_stress_image")` |
+| Survey/questionnaire shown | `SendMarker("SurveyStart:post_scenario")` |
+| Session ends | `SendMarker("SessionEnd")` |
+
+#### Marker naming convention
+
+Use `Category:Detail` format. The string can be anything — keep it consistent so analysis scripts can parse it:
+
+```
+ScenarioStart:1
+ScenarioEnd:1
+UserMessage:3:Role1
+NPCReply:3:Role1
+SurveyStart:2
+SurveyEnd:2
+SessionEnd
+```
+
+The marker is timestamped at the exact frame `SendMarker()` is called — not before, not after. The timestamp precision is sub-millisecond.
 
 ### Running a session
 
