@@ -75,33 +75,39 @@ You never need to do this manually. After loading with `pyxdf.load_xdf()`, all t
 
 Clock alignment tells you WHEN each event was recorded. But there's a separate question: how long does it take for a visual stimulus to physically reach the eye tracker?
 
-The SyncFlash sequence measures this:
+The SyncFlash sequence measures this end-to-end pipeline:
 
 ```mermaid
-gantt
-    title SyncFlash Latency Pipeline (typical values)
-    dateFormat X
-    axisFormat %Lms
+flowchart TD
+    A["SyncFlash:id=N marker fired\n(t = 0ms)"] --> B
+    B["Unity renders white frame\n+ WaitForEndOfFrame\n(~8ms)"] --> C
+    C["Quest compositor queues frame\n(120Hz = 8.3ms per frame)"] --> D
+    D["Quest display scanout\n(~4ms)"] --> E
+    E["Light hits eye\n(instant)"] --> F
+    F["Biological pupil reflex\n(~150-200ms)"] --> G
+    G["Neon camera captures\n(200Hz = 5ms window)"] --> H
+    H["Neon processing + USB to phone\n(~10ms)"] --> I
+    I["Phone WiFi TX to PC\n(~2ms)"] --> J
+    J["Gaze spike recorded in XDF\n(t = ~240ms)"]
 
-    section Unity
-    Render + EndOfFrame       :a1, 0, 8
-
-    section Quest Hardware
-    Compositor queue (90Hz)   :a2, 8, 19
-    Display scanout           :a3, 19, 24
-
-    section Eye Tracker
-    Neon camera acquire       :a4, 24, 29
-    Neon processing + USB     :a5, 29, 39
-
-    section Network
-    Phone WiFi TX to PC       :a6, 39, 41
-
-    section Measured
-    Total stimulus-to-data    :milestone, m1, 41, 0
+    style A fill:#4a9eff,color:#fff
+    style J fill:#2ecc71,color:#fff
 ```
 
-> The values above are illustrative. Actual measured total is typically 200-300ms due to biological pupil reflex latency (~150-200ms) which dominates the pipeline.
+| Stage | Duration | Cumulative | Measurable? |
+|-------|----------|-----------|-------------|
+| Unity render to EndOfFrame | ~8ms | 8ms | Yes (`unityMs` in marker) |
+| Quest compositor (120Hz) | ~8ms | 16ms | No (OS-level) |
+| Display scanout | ~4ms | 20ms | No (hardware) |
+| Biological pupil reflex | ~150-200ms | 200ms | No (physiology) |
+| Neon acquisition (200Hz) | ~5ms | 225ms | No (camera timing) |
+| Neon processing + USB | ~10ms | 235ms | No (device internal) |
+| WiFi to PC | ~2ms | 237ms | No (network) |
+| **Total measured** | **~240ms** | | **Yes (spike_t - flash_t)** |
+
+The total is dominated by the biological pupil light reflex. Only `unityMs` and the total are directly measurable from the data. The breakdown above is estimated from hardware specs.
+
+**Key point:** This latency does NOT affect timestamp alignment. Both the SyncFlash marker and the gaze spike have correct timestamps (thanks to LSL clock sync). The latency tells you the physical delay between stimulus and measurement — subtract it when computing reaction times.
 
 **What each marker means:**
 
