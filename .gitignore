@@ -1,0 +1,22 @@
+# Local config (contains hardware serials)
+orchestrator/config.json
+
+# Binaries (user downloads these)
+orchestrator/bin/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Data
+Data/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vs/
+.idea/
+*.user

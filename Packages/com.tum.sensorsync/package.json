@@ -1,0 +1,21 @@
+{
+  "name": "com.tum.sensorsync",
+  "displayName": "TUM Sensor Sync",
+  "version": "1.0.0",
+  "unity": "2022.3",
+  "description": "LSL marker system for VR research. Publishes timestamped string events over Lab Streaming Layer for multi-sensor synchronization.",
+  "keywords": ["lsl", "vr", "research", "sensor", "markers", "eye-tracking", "heart-rate"],
+  "author": {
+    "name": "TUM VR Research"
+  },
+  "dependencies": {
+    "com.labstreaminglayer.lsl4unity": "1.16.0"
+  },
+  "samples": [
+    {
+      "displayName": "Basic Integration",
+      "description": "Minimal example showing marker sending and SyncFlash calibration.",
+      "path": "Samples~/BasicIntegration"
+    }
+  ]
+}

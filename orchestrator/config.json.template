@@ -1,0 +1,59 @@
+{
+  "_comment": "Copy this file to config.json and edit for your deployment.",
+
+  "marker_stream_name": "UnityMarkers",
+
+  "devices": [
+    {
+      "label": "Neon Gaze",
+      "match": "type",
+      "value": "Gaze",
+      "required": true,
+      "nominal_hz": 200,
+      "hint": "Enable LSL in Neon Companion app on phone",
+      "channels": {
+        "gaze_x": 0,
+        "gaze_y": 1,
+        "pupil_left_mm": 7,
+        "pupil_right_mm": 8,
+        "blink": -1
+      }
+    },
+    {
+      "label": "Neon Event",
+      "match": "type",
+      "value": "Event",
+      "required": false,
+      "hint": "Neon internal event stream (optional, recorded if present)"
+    },
+    {
+      "label": "HR Polar H10 1339173B",
+      "match": "name",
+      "value": "HR Polar H10 1339173B",
+      "required": true,
+      "nominal_hz": 1,
+      "hint": "Open RRStreamer -> connect Polar H10 -> serial must be 1339173B"
+    },
+    {
+      "label": "RR Polar H10 1339173B",
+      "match": "name",
+      "value": "RR Polar H10 1339173B",
+      "required": true,
+      "nominal_hz": 1,
+      "hint": "Same as HR -- RRStreamer must show 'Streaming'"
+    }
+  ],
+
+  "recording": {
+    "labrecorder_cli": "bin/LabRecorderCLI.exe",
+    "data_dir": "../../Data/Recordings",
+    "session_log_dir": "../../Data/SessionLogs/new"
+  },
+
+  "timing": {
+    "dropout_timeout_s": 3.0,
+    "auto_stop_delay_s": 10
+  },
+
+  "lsl_relay_path": null
+}

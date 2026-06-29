@@ -1,0 +1,14 @@
+{
+    "name": "TUM.SensorSync.Editor",
+    "rootNamespace": "",
+    "references": ["TUM.SensorSync.Runtime"],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

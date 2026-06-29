@@ -1,0 +1,14 @@
+{
+    "name": "TUM.SensorSync.Runtime",
+    "rootNamespace": "",
+    "references": ["labstreaminglayer.LSL4Unity.Runtime"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
