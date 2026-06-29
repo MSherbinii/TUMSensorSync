@@ -12,20 +12,47 @@ A toolkit for recording physiological data alongside VR experiences:
 
 ## Architecture
 
-```
-Quest (APK)                    Phone (sensors)              PC (recording)
-┌────────────────────┐    ┌──────────────────────┐    ┌──────────────────┐
-│ LSLManager         │    │ Neon Companion       │    │ LabRecorder      │
-│  "UnityMarkers" ───┼────┤  "Gaze" (200Hz) ────┼────┤  Records all     │
-│                    │    │ RRStreamer           │    │  into one .xdf   │
-│ LSLEventBridge     │ Wi-Fi │  "HR/RR" (1Hz) ────┼────┤                  │
-└────────────────────┘    └──────────────────────┘    │ Orchestrator     │
-                                                      │  stream_watcher  │
-                                                      │  preflight       │
-                                                      └──────────────────┘
+```mermaid
+flowchart LR
+    subgraph Quest["Meta Quest (APK)"]
+        LSLManager["LSLManager\n'UnityMarkers'"]
+        LSLEventBridge["LSLEventBridge"]
+    end
+
+    subgraph Phone["Android Phone"]
+        Neon["Neon Companion\n'Gaze' · 200Hz"]
+        RRStreamer["RRStreamer\n'HR/RR' · 1Hz"]
+    end
+
+    subgraph PC["Windows PC"]
+        LabRecorder["LabRecorder\n→ .xdf"]
+        Orchestrator["Orchestrator\npreflight · watcher · recorder"]
+        Analysis["Analysis\nalign · debug · export"]
+    end
+
+    LSLManager -- "Wi-Fi · LSL" --> LabRecorder
+    Neon -- "Wi-Fi · LSL" --> LabRecorder
+    RRStreamer -- "Wi-Fi · LSL" --> LabRecorder
+    LabRecorder --> Analysis
+    Orchestrator -. "controls" .-> LabRecorder
 ```
 
-All devices on the same Wi-Fi. LSL handles clock synchronization across devices automatically.
+All devices on the same Wi-Fi network. LSL handles clock synchronization across devices automatically.
+
+```mermaid
+sequenceDiagram
+    participant U as Unity (Quest)
+    participant L as LSL Network
+    participant R as LabRecorder (PC)
+    participant X as .xdf File
+
+    U->>L: push_sample("ScenarioStart:1") @ t=12.003s
+    Note over U,L: LSL timestamps with local Quest clock
+    L->>R: TCP delivery (~2ms)
+    Note over R: Applies clock correction offset
+    R->>X: Write sample @ corrected_t=12.003s
+    Note over X: All streams on unified PC clock
+```
 
 ## How Time Alignment Works
 
@@ -50,24 +77,31 @@ Clock alignment tells you WHEN each event was recorded. But there's a separate q
 
 The SyncFlash sequence measures this:
 
-```
-Time ──────────────────────────────────────────────────────────────────►
+```mermaid
+gantt
+    title SyncFlash Latency Pipeline (typical values)
+    dateFormat X
+    axisFormat %Lms
 
-  t=0ms          t=8ms              t=~250ms
-    │               │                    │
-    ▼               ▼                    ▼
- [Unity fires   [End of frame:      [Eye tracker
-  white flash]   GPU submitted       detects spike
-                 frame to Quest      in worn/gaze
-                 compositor]         channel]
-    │               │                    │
-    │◄─ unity_ms ──►│                    │
-    │                                    │
-    │◄────────── total latency ─────────►│
-                    │                    │
-                    │◄── remaining ─────►│
-                    (compositor + display + bio reflex + Neon + WiFi)
+    section Unity
+    Render + EndOfFrame       :a1, 0, 8
+
+    section Quest Hardware
+    Compositor queue (90Hz)   :a2, 8, 19
+    Display scanout           :a3, 19, 24
+
+    section Eye Tracker
+    Neon camera acquire       :a4, 24, 29
+    Neon processing + USB     :a5, 29, 39
+
+    section Network
+    Phone WiFi TX to PC       :a6, 39, 41
+
+    section Measured
+    Total stimulus-to-data    :milestone, m1, 41, 0
 ```
+
+> The values above are illustrative. Actual measured total is typically 200-300ms due to biological pupil reflex latency (~150-200ms) which dominates the pipeline.
 
 **What each marker means:**
 
