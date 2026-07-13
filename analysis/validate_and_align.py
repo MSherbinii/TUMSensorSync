@@ -267,10 +267,48 @@ def build_aligned_dataframe(streams, markers):
 
     df = pd.DataFrame(data)
 
+    # Back-calculate true beat timestamps from RR intervals.
+    # When multiple RR values arrive in one BLE packet they share the same
+    # LSL timestamp.  We reconstruct the actual beat onset times by subtracting
+    # accumulated RR durations backwards from the arrival time.
+    if rr_key and len(streams[rr_key]["time_stamps"]) > 1:
+        raw_rr_ts = np.array(streams[rr_key]["time_stamps"])
+        raw_rr_v  = np.array([v[0] for v in streams[rr_key]["time_series"]],
+                             dtype=float)
+
+        corrected_ts = np.empty_like(raw_rr_ts)
+        corrected_v  = raw_rr_v.copy()
+
+        i = 0
+        while i < len(raw_rr_ts):
+            # Find group of samples sharing the same LSL timestamp
+            j = i + 1
+            while j < len(raw_rr_ts) and raw_rr_ts[j] == raw_rr_ts[i]:
+                j += 1
+
+            # Back-calculate: last sample in the group keeps the arrival time,
+            # earlier samples are offset by cumulative RR durations (in ms→s).
+            arrival = raw_rr_ts[i]
+            group_rr = raw_rr_v[i:j]  # ordered oldest-beat-first
+            # Accumulate from the end: beat[k] = arrival - sum(rr[k+1:]) * 0.001
+            cum_offset = 0.0
+            for k in range(j - 1, i - 1, -1):
+                corrected_ts[k] = arrival - cum_offset
+                cum_offset += raw_rr_v[k] * 0.001
+
+            i = j
+
+        # Replace raw stream data with corrected timestamps for interpolation
+        streams[rr_key]["_corrected_ts"] = corrected_ts
+
     # Interpolate HR onto gaze timebase
     for key, col in [(hr_key, "hr_bpm"), (rr_key, "rr_ms")]:
         if key and len(streams[key]["time_stamps"]) > 1:
-            src_ts = np.array(streams[key]["time_stamps"])
+            # Use corrected timestamps for RR if available
+            if col == "rr_ms" and "_corrected_ts" in streams.get(key, {}):
+                src_ts = streams[key]["_corrected_ts"]
+            else:
+                src_ts = np.array(streams[key]["time_stamps"])
             src_v  = np.array([v[0] for v in streams[key]["time_series"]], dtype=float)
             interp = interp1d(src_ts, src_v, kind="linear",
                               bounds_error=False, fill_value=np.nan)
