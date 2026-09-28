@@ -6,7 +6,7 @@ _CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
 _LEGACY_DEFAULT_DEVICES = [
     {"label": "Neon Gaze", "match": "type", "value": "Gaze", "required": True,
      "nominal_hz": 200, "hint": "Enable LSL in Neon Companion app on phone",
-     "channels": {"gaze_x": 0, "gaze_y": 1, "pupil_left_mm": 7, "pupil_right_mm": 8}},
+     "channels": {"gaze_x": 0, "gaze_y": 1, "pupil_left_mm": 2, "pupil_right_mm": 9}},
     {"label": "Neon Event", "match": "type", "value": "Event", "required": False,
      "hint": "Neon internal event stream (optional, recorded if present)"},
 ]
@@ -71,7 +71,7 @@ def devices() -> list:
 def expected_streams() -> list:
     marker = {
         "label": marker_stream_name(), "match": "name", "value": marker_stream_name(),
-        "required": True, "hint": "Start the VR app on the Quest",
+        "required": get("marker_required", True), "hint": "Start the VR app on the Quest",
     }
     return [marker] + devices()
 
@@ -94,7 +94,7 @@ def gaze_channels() -> dict:
     dev = gaze_device()
     if dev and "channels" in dev:
         return dev["channels"]
-    return {"gaze_x": 0, "gaze_y": 1, "pupil_left_mm": 7, "pupil_right_mm": 8}
+    return {"gaze_x": 0, "gaze_y": 1, "pupil_left_mm": 2, "pupil_right_mm": 9}
 
 
 def recording_dir() -> str:

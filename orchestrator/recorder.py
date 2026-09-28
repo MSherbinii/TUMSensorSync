@@ -47,15 +47,30 @@ class Recorder:
         # No predicates = record all visible LSL streams
         args = [CLI_EXE, self._current_file] + _build_stream_selectors()
 
-        self._process = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # LabRecorderCLI's supported shutdown is an Enter key on stdin. Keep a private
+        # pipe so the orchestrator can ask it to write XDF footers without competing
+        # with the operator's Q key on the console.
+        self._process = subprocess.Popen(args, stdin=subprocess.PIPE,
+                                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                         text=True)
         return self._current_file
 
     def stop(self) -> None:
         """Stop the current recording cleanly."""
         if self._process and self._process.poll() is None:
-            self._process.terminate()
             try:
-                self._process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                self._process.kill()
+                if self._process.stdin is not None:
+                    self._process.stdin.write("\n")
+                    self._process.stdin.flush()
+                self._process.wait(timeout=10)
+            except (BrokenPipeError, OSError, subprocess.TimeoutExpired):
+                # Only an unresponsive recorder is force-stopped. A normal Enter exit
+                # preserves XDF stream footers and avoids the recoverable tail warning.
+                if self._process.poll() is None:
+                    self._process.terminate()
+                    try: self._process.wait(timeout=5)
+                    except subprocess.TimeoutExpired: self._process.kill()
+            finally:
+                if self._process.stdin is not None:
+                    self._process.stdin.close()
         self._process = None

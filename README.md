@@ -309,7 +309,7 @@ One row per gaze sample (200Hz). Columns:
       "value": "Gaze",
       "required": true,
       "nominal_hz": 200,
-      "channels": {"gaze_x": 0, "gaze_y": 1, "pupil_left_mm": 7, "pupil_right_mm": 8}
+      "channels": {"gaze_x": 0, "gaze_y": 1, "pupil_left_mm": 2, "pupil_right_mm": 9}
     },
     {
       "label": "HR Polar H10 XXXXXXXX",
